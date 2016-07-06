@@ -298,12 +298,15 @@
   #define ENDSTOPPULLUP_XMIN
   #define ENDSTOPPULLUP_YMIN
   #define ENDSTOPPULLUP_ZMIN
+  #define ENDSTOPPULLUP_E1MIN
+  #define ENDSTOPPULLUP_E1MAX
 #endif
 
 // The pullups are needed if you directly connect a mechanical endswitch between the signal and ground pins.
 const bool X_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops.
 const bool Y_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops.
 const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops.
+const bool E1_ENDSTOPS_INVERTING = true; // set to true to invert the logic of the endstops.
 //#define DISABLE_MAX_ENDSTOPS
 //#define DISABLE_MIN_ENDSTOPS
 

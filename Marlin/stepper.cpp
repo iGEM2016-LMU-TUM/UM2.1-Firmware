@@ -71,6 +71,8 @@ volatile long endstops_stepsTotal,endstops_stepsDone;
 static volatile bool endstop_x_hit=false;
 static volatile bool endstop_y_hit=false;
 static volatile bool endstop_z_hit=false;
+static volatile bool endstop_min_e1_hit=false;
+static volatile bool endstop_max_e1_hit=false;
 #ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
 bool abort_on_endstop_hit = false;
 #endif
@@ -84,6 +86,8 @@ static bool old_y_min_endstop=false;
 static bool old_y_max_endstop=false;
 static bool old_z_min_endstop=false;
 static bool old_z_max_endstop=false;
+static bool old_e1_min_endstop=false;
+static bool old_e1_max_endstop=false;
 
 static bool check_endstops = true;
 
@@ -183,7 +187,7 @@ asm volatile ( \
 
 void checkHitEndstops()
 {
- if( endstop_x_hit || endstop_y_hit || endstop_z_hit) {
+ if( endstop_x_hit || endstop_y_hit || endstop_z_hit || endstop_min_e1_hit || endstop_max_e1_hit) {
    SERIAL_ECHO_START;
    SERIAL_ECHOPGM(MSG_ENDSTOPS_HIT);
    if(endstop_x_hit) {
@@ -198,10 +202,20 @@ void checkHitEndstops()
      SERIAL_ECHOPAIR(" Z:",(float)endstops_trigsteps[Z_AXIS]/axis_steps_per_unit[Z_AXIS]);
      LCD_MESSAGEPGM(MSG_ENDSTOPS_HIT "Z");
    }
+   if(endstop_min_e1_hit) {
+     SERIAL_ECHOPGM(" E1 min");
+     LCD_MESSAGEPGM(MSG_ENDSTOPS_HIT "E1 min");
+   }
+   if(endstop_max_e1_hit) {
+     SERIAL_ECHOPGM(" E1 max");
+     LCD_MESSAGEPGM(MSG_ENDSTOPS_HIT "E1 max");
+   }
    SERIAL_ECHOLN("");
    endstop_x_hit=false;
    endstop_y_hit=false;
    endstop_z_hit=false;
+   endstop_min_e1_hit=false;
+   endstop_max_e1_hit=false;
 #ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
    if (abort_on_endstop_hit)
    {
@@ -218,11 +232,13 @@ void checkHitEndstops()
 
 bool isEndstopHit()
 {
+  /* This method is used for homing, so e1 endstop is intentionally not included */
     return endstop_x_hit || endstop_y_hit || endstop_z_hit;
 }
 
 void endstops_hit_on_purpose()
 {
+  /* This method is used for homing, so e1 endstop is intentionally not included */
   endstop_x_hit=false;
   endstop_y_hit=false;
   endstop_z_hit=false;
@@ -493,6 +509,25 @@ ISR(TIMER1_COMPA_vect)
       }
     }
 
+    /* Checking extruder 1 endstops is not dependent on CHECK_ENDSTOPS, but active_extruder */
+    #if EXTRUDERS > 1
+      if (current_block->active_extruder == 1) {
+        #if defined(E1_MIN_PIN) && E1_MIN_PIN > -1
+          bool e1_min_endstop=(READ(E1_MIN_PIN) != E1_ENDSTOPS_INVERTING);
+          if (e1_min_endstop && old_e1_min_endstop)
+            endstop_min_e1_hit=true;
+          old_e1_min_endstop = e1_min_endstop;
+        #endif
+
+        #if defined(E1_MAX_PIN) && E1_MAX_PIN > -1
+          bool e1_max_endstop=(READ(E1_MAX_PIN) != E1_ENDSTOPS_INVERTING);
+          if (e1_max_endstop && old_e1_max_endstop)
+            endstop_max_e1_hit=true;
+          old_e1_max_endstop = e1_max_endstop;
+        #endif
+      }
+    #endif
+
     #ifndef ADVANCE
       if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
         REV_E_DIR();
@@ -757,6 +792,22 @@ void st_init()
   #endif
 
   //endstops and pullups
+
+  #if EXTRUDERS > 1
+    #if defined(E1_MIN_PIN) && E1_MIN_PIN > -1
+      SET_INPUT(E1_MIN_PIN);
+      #ifdef ENDSTOPPULLUP_E1MIN
+        WRITE(E1_MIN_PIN,HIGH);
+      #endif
+    #endif
+
+    #if defined(E1_MAX_PIN) && E1_MAX_PIN > -1
+      SET_INPUT(E1_MAX_PIN);
+      #ifdef ENDSTOPPULLUP_E1MAX
+        WRITE(E1_MAX_PIN,HIGH);
+      #endif
+    #endif
+  #endif
 
   #if defined(X_MIN_PIN) && X_MIN_PIN > -1
     SET_INPUT(X_MIN_PIN);

@@ -1199,6 +1199,8 @@
 #define E1_STEP_PIN         49
 #define E1_DIR_PIN          47
 #define E1_ENABLE_PIN       48
+#define E1_MIN_PIN 65 // called PK3 or A11; exposed on ADC2 connector
+#define E1_MAX_PIN 66 // called PK4 or A12; exposed on ADC2 connector
 
 #define SDPOWER            -1
 #define SDSS               53
@@ -2098,7 +2100,7 @@
 //List of pins which to ignore when asked to change by gcode, 0 and 1 are RX and TX, do not mess with those!
 #define _E0_PINS E0_STEP_PIN, E0_DIR_PIN, E0_ENABLE_PIN, HEATER_0_PIN,
 #if EXTRUDERS > 1
-  #define _E1_PINS E1_STEP_PIN, E1_DIR_PIN, E1_ENABLE_PIN, HEATER_1_PIN,
+  #define _E1_PINS E1_STEP_PIN, E1_DIR_PIN, E1_ENABLE_PIN, HEATER_1_PIN, E1_MIN_PIN, E1_MAX_PIN,
 #else
   #define _E1_PINS
 #endif
