@@ -593,12 +593,15 @@ ISR(TIMER1_COMPA_vect)
       }
 
       #ifndef ADVANCE
-        counter_e += current_block->steps_e;
-        if (counter_e > 0) {
-          WRITE_E_STEP(!INVERT_E_STEP_PIN);
-          counter_e -= current_block->step_event_count;
-          count_position[E_AXIS]+=count_direction[E_AXIS];
-          WRITE_E_STEP(INVERT_E_STEP_PIN);
+        /* Just allow movement away from a hit endstop for extruder 1 */
+        if (current_block->active_extruder != 1 || (count_direction[E_AXIS]==1 && !endstop_max_e1_hit) || (count_direction[E_AXIS]==-1 && !endstop_min_e1_hit)) {
+          counter_e += current_block->steps_e;
+          if (counter_e > 0) {
+            WRITE_E_STEP(!INVERT_E_STEP_PIN);
+            counter_e -= current_block->step_event_count;
+            count_position[E_AXIS]+=count_direction[E_AXIS];
+            WRITE_E_STEP(INVERT_E_STEP_PIN);
+          }
         }
       #endif //!ADVANCE
       step_events_completed += 1;
