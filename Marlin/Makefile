@@ -184,7 +184,7 @@ endif
 endif
 HARDWARE_SRC = $(HARDWARE_DIR)/$(HARDWARE_VARIANT)/avr/cores/arduino
 
-TARGET = $(notdir $(CURDIR))
+TARGET = MarlinUltimaker2plus
 
 # VPATH tells make to look into these directory for source files,
 # there is no need to specify explicit pathnames as long as the
