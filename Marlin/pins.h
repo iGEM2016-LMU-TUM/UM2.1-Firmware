@@ -1187,7 +1187,7 @@
 #define TEMP_0_PIN 8
 
 #define HEATER_1_PIN 3
-#define TEMP_1_PIN 9
+#define TEMP_1_PIN -1
 
 #define HEATER_2_PIN -1
 #define TEMP_2_PIN -1
