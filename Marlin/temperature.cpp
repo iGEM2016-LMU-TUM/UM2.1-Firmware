@@ -1254,24 +1254,6 @@ ISR(TIMER0_COMPB_vect)
     raw_temp_2_value = 0;
     raw_temp_bed_value = 0;
 
-#if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
-    if(current_temperature_raw[0] <= maxttemp_raw[0]) {
-#else
-    if(current_temperature_raw[0] >= maxttemp_raw[0]) {
-#endif
-#ifndef HEATER_0_USES_MAX6675
-       max_temp_error(0);
-#endif
-    }
-#if HEATER_0_RAW_LO_TEMP > HEATER_0_RAW_HI_TEMP
-    if(current_temperature_raw[0] >= minttemp_raw[0]) {
-#else
-    if(current_temperature_raw[0] <= minttemp_raw[0]) {
-#endif
-#ifndef HEATER_0_USES_MAX6675
-       min_temp_error(0);
-#endif
-    }
 #if EXTRUDERS > 2
 #if HEATER_2_RAW_LO_TEMP > HEATER_2_RAW_HI_TEMP
     if(current_temperature_raw[2] <= maxttemp_raw[2]) {
