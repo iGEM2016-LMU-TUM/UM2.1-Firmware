@@ -12,12 +12,13 @@
 #include "UltiLCD2_menu_first_run.h"
 #include "UltiLCD2_menu_print.h"
 
+#define SAFETY_HEIGHT 10
 #define BED_CENTER_ADJUST_X (X_MAX_POS/2)
-#define BED_CENTER_ADJUST_Y ((int)Y_MAX_LENGTH - 10)
-#define BED_LEFT_ADJUST_X 10
-#define BED_LEFT_ADJUST_Y 20
+#define BED_CENTER_ADJUST_Y (Y_MAX_POS - 20) // FIXME refine
+#define BED_LEFT_ADJUST_X (X_MIN_POS + 10)
+#define BED_LEFT_ADJUST_Y (Y_MIN_POS + 20)
 #define BED_RIGHT_ADJUST_X (X_MAX_POS - 10)
-#define BED_RIGHT_ADJUST_Y 20
+#define BED_RIGHT_ADJUST_Y (Y_MIN_POS + 20)
 
 static void lcd_menu_first_run_init_2();
 static void lcd_menu_first_run_init_3();
@@ -43,9 +44,9 @@ static void lcd_menu_first_run_material_load_wait();
 static void lcd_menu_first_run_print_1();
 static void lcd_menu_first_run_print_card_detect();
 
-#define DRAW_PROGRESS_NR_IF_NOT_DONE(nr) do { if (!IS_FIRST_RUN_DONE()) { lcd_lib_draw_stringP((nr < 10) ? 100 : 94, 0, PSTR( #nr "/21")); } } while(0)
-#define DRAW_PROGRESS_NR(nr) do { lcd_lib_draw_stringP((nr < 10) ? 100 : 94, 0, PSTR( #nr "/21")); } while(0)
-#define CLEAR_PROGRESS_NR(nr) do { lcd_lib_clear_stringP((nr < 10) ? 100 : 94, 0, PSTR( #nr "/21")); } while(0)
+#define DRAW_PROGRESS_NR_IF_NOT_DONE(nr) do { if (!IS_FIRST_RUN_DONE()) { lcd_lib_draw_stringP((nr < 10) ? 100 : 94, 0, PSTR( #nr "/22")); } } while(0)
+#define DRAW_PROGRESS_NR(nr) do { lcd_lib_draw_stringP((nr < 10) ? 100 : 94, 0, PSTR( #nr "/22")); } while(0)
+#define CLEAR_PROGRESS_NR(nr) do { lcd_lib_clear_stringP((nr < 10) ? 100 : 94, 0, PSTR( #nr "/22")); } while(0)
 
 //Run the first time you start-up the machine or after a factory reset.
 void lcd_menu_first_run_init()
@@ -65,7 +66,7 @@ static void homeAndParkHeadForCenterAdjustment2()
     add_homeing[Z_AXIS] = 0;
     enquecommand_P(PSTR("G28 Z0 X0 Y0"));
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), 35, X_MAX_LENGTH/2, BED_CENTER_ADJUST_Y);
+    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), 35, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
     enquecommand(buffer);
 }
 //Started bed leveling from the calibration menu
@@ -126,7 +127,7 @@ static void parkHeadForLeftAdjustment()
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
 
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z5"), int(homing_feedrate[Z_AXIS]));
+    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT);
     enquecommand(buffer);
     sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), BED_LEFT_ADJUST_X, BED_LEFT_ADJUST_Y);
     enquecommand(buffer);
@@ -163,7 +164,7 @@ static void lcd_menu_first_run_bed_level_center_adjust()
 static void parkHeadForRightAdjustment()
 {
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z5"), int(homing_feedrate[Z_AXIS]));
+    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT);
     enquecommand(buffer);
     sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), BED_RIGHT_ADJUST_X, BED_RIGHT_ADJUST_Y);
     enquecommand(buffer);
@@ -203,9 +204,9 @@ static void lcd_menu_first_run_bed_level_right_adjust()
 static void parkHeadForCenterAdjustment()
 {
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z5"), int(homing_feedrate[Z_AXIS]));
+    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT);
     enquecommand(buffer);
-    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), X_MAX_LENGTH / 2, BED_CENTER_ADJUST_Y);
+    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
     enquecommand(buffer);
     sprintf_P(buffer, PSTR("G1 F%i Z0"), int(homing_feedrate[Z_AXIS]));
     enquecommand(buffer);
@@ -269,16 +270,52 @@ static void homeBed()
     enquecommand_P(PSTR("G28 Z0"));
 }
 
+static void parkHeadForMiddleAdjustment()
+{
+    char buffer[32];
+    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT);
+    enquecommand(buffer);
+    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), X_MAX_POS/2, Y_MAX_POS/2);
+    enquecommand(buffer);
+    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT / 2);
+    enquecommand(buffer);
+}
+static void lcd_menu_first_run_bed_level_middle_height()
+{
+    LED_GLOW();
+
+    if (lcd_lib_encoder_pos == ENCODER_NO_SELECTION)
+        lcd_lib_encoder_pos = 0;
+
+    if (printing_state == PRINT_STATE_NORMAL && lcd_lib_encoder_pos != 0 && movesplanned() < 4)
+    {
+        current_position[Z_AXIS] -= float(lcd_lib_encoder_pos) * 0.05;
+        lcd_lib_encoder_pos = 0;
+        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 60, 0);
+    }
+
+    if (movesplanned() > 0)
+        lcd_info_screen(NULL, NULL, PSTR("CONTINUE"));
+    else {
+        if (IS_FIRST_RUN_DONE())
+            lcd_info_screen(lcd_menu_main, homeBed, PSTR("DONE"));
+        else
+            lcd_info_screen(lcd_menu_first_run_material_load, homeBed, PSTR("CONTINUE"));
+    }
+    DRAW_PROGRESS_NR_IF_NOT_DONE(11);
+    lcd_lib_draw_string_centerP(10, PSTR("Put needle on"));
+    lcd_lib_draw_string_centerP(20, PSTR("glass plate"));
+    lcd_lib_draw_string_centerP(30, PSTR("until you feel a"));
+    lcd_lib_draw_string_centerP(40, PSTR("bit resistance."));
+    lcd_lib_update_screen();
+}
+
 static void lcd_menu_first_run_bed_level_paper_right()
 {
     LED_GLOW();
 
     SELECT_MAIN_MENU_ITEM(0);
-    if (IS_FIRST_RUN_DONE())
-        //lcd_info_screen(lcd_menu_first_run_material_select_1, straightToMaterialSelect, PSTR("CONTINUE"));
-        lcd_info_screen(lcd_menu_main, homeBed, PSTR("DONE"));
-    else
-        lcd_info_screen(lcd_menu_first_run_material_load, homeBed, PSTR("CONTINUE"));
+    lcd_info_screen(lcd_menu_first_run_bed_level_middle_height, parkHeadForMiddleAdjustment, PSTR("CONTINUE"));
     DRAW_PROGRESS_NR_IF_NOT_DONE(10);
     lcd_lib_draw_string_centerP(20, PSTR("Repeat this for"));
     lcd_lib_draw_string_centerP(30, PSTR("the right corner..."));
@@ -296,7 +333,7 @@ static void lcd_menu_first_run_material_load()
 {
     SELECT_MAIN_MENU_ITEM(0);
     lcd_info_screen(lcd_menu_first_run_material_select_1, parkHeadForHeating, PSTR("CONTINUE"));
-    DRAW_PROGRESS_NR(11);
+    DRAW_PROGRESS_NR(12);
     lcd_lib_draw_string_centerP(10, PSTR("Now that we leveled"));
     lcd_lib_draw_string_centerP(20, PSTR("the buildplate"));
     lcd_lib_draw_string_centerP(30, PSTR("the next step is"));
@@ -319,7 +356,7 @@ static void lcd_menu_first_run_material_select_1()
     }
     SELECT_MAIN_MENU_ITEM(0);
     lcd_info_screen(lcd_menu_first_run_material_select_material, doCooldown, PSTR("READY"));
-    DRAW_PROGRESS_NR(12);
+    DRAW_PROGRESS_NR(13);
     lcd_lib_draw_string_centerP(10, PSTR("Next, select the"));
     lcd_lib_draw_string_centerP(20, PSTR("material you will"));
     lcd_lib_draw_string_centerP(30, PSTR("insert in this"));
@@ -344,7 +381,7 @@ static void lcd_menu_first_run_material_select_material()
     uint8_t count = eeprom_read_byte(EEPROM_MATERIAL_COUNT_OFFSET());
 
     lcd_scroll_menu(PSTR("MATERIAL"), count, lcd_material_select_callback, lcd_material_select_details_callback);
-    CLEAR_PROGRESS_NR(13);
+    CLEAR_PROGRESS_NR(14);
     lcd_lib_update_screen();
 
     if (lcd_lib_button_pressed)
@@ -363,7 +400,7 @@ static void lcd_menu_first_run_material_select_confirm_material()
 {
     LED_GLOW();
     lcd_question_screen(lcd_menu_first_run_material_select_2, NULL, PSTR("YES"), lcd_menu_first_run_material_select_material, NULL, PSTR("NO"));
-    DRAW_PROGRESS_NR(14);
+    DRAW_PROGRESS_NR(15);
     lcd_lib_draw_string_centerP(20, PSTR("You have chosen"));
     lcd_lib_draw_string_center(30, card.longFilename);
     lcd_lib_draw_string_centerP(40, PSTR("is this right?"));
@@ -374,7 +411,7 @@ static void lcd_menu_first_run_material_select_2()
 {
     SELECT_MAIN_MENU_ITEM(0);
     lcd_info_screen(lcd_menu_first_run_material_load_heatup, NULL, PSTR("CONTINUE"));
-    DRAW_PROGRESS_NR(15);
+    DRAW_PROGRESS_NR(16);
     lcd_lib_draw_string_centerP(10, PSTR("Now your Ultimaker2"));
     lcd_lib_draw_string_centerP(20, PSTR("knows what kind"));
     lcd_lib_draw_string_centerP(30, PSTR("of material"));
@@ -404,7 +441,7 @@ static void lcd_menu_first_run_material_load_heatup()
         minProgress = progress;
 
     lcd_basic_screen();
-    DRAW_PROGRESS_NR(16);
+    DRAW_PROGRESS_NR(17);
     lcd_lib_draw_string_centerP(10, PSTR("Please wait,"));
     lcd_lib_draw_string_centerP(20, PSTR("printhead heating for"));
     lcd_lib_draw_string_centerP(30, PSTR("material loading"));
@@ -444,7 +481,7 @@ static void lcd_menu_first_run_material_load_insert()
 
     SELECT_MAIN_MENU_ITEM(0);
     lcd_info_screen(lcd_menu_first_run_material_load_forward, runMaterialForward, PSTR("CONTINUE"));
-    DRAW_PROGRESS_NR(17);
+    DRAW_PROGRESS_NR(18);
     lcd_lib_draw_string_centerP(10, PSTR("Insert new material"));
     lcd_lib_draw_string_centerP(20, PSTR("from the rear of"));
     lcd_lib_draw_string_centerP(30, PSTR("your Ultimaker2,"));
@@ -455,7 +492,7 @@ static void lcd_menu_first_run_material_load_insert()
 static void lcd_menu_first_run_material_load_forward()
 {
     lcd_basic_screen();
-    DRAW_PROGRESS_NR(18);
+    DRAW_PROGRESS_NR(19);
     lcd_lib_draw_string_centerP(20, PSTR("Loading material..."));
 
     if (!blocks_queued())
@@ -480,7 +517,7 @@ static void lcd_menu_first_run_material_load_wait()
     LED_GLOW();
 
     lcd_info_screen(lcd_menu_first_run_print_1, doCooldown, PSTR("CONTINUE"));
-    DRAW_PROGRESS_NR(19);
+    DRAW_PROGRESS_NR(20);
     lcd_lib_draw_string_centerP(10, PSTR("Push button when"));
     lcd_lib_draw_string_centerP(20, PSTR("material exits"));
     lcd_lib_draw_string_centerP(30, PSTR("from nozzle..."));
@@ -498,7 +535,7 @@ static void lcd_menu_first_run_print_1()
 {
     SELECT_MAIN_MENU_ITEM(0);
     lcd_info_screen(lcd_menu_first_run_print_card_detect, NULL, PSTR("ARE YOU READY?"));
-    DRAW_PROGRESS_NR(20);
+    DRAW_PROGRESS_NR(21);
     lcd_lib_draw_string_centerP(20, PSTR("I'm ready let's"));
     lcd_lib_draw_string_centerP(30, PSTR("make a 3D Print!"));
     lcd_lib_update_screen();
@@ -509,7 +546,7 @@ static void lcd_menu_first_run_print_card_detect()
     if (!card.sdInserted)
     {
         lcd_info_screen(lcd_menu_main);
-        DRAW_PROGRESS_NR(21);
+        DRAW_PROGRESS_NR(22);
         lcd_lib_draw_string_centerP(20, PSTR("Please insert SD-card"));
         lcd_lib_draw_string_centerP(30, PSTR("that came with"));
         lcd_lib_draw_string_centerP(40, PSTR("your Ultimaker2..."));
@@ -521,7 +558,7 @@ static void lcd_menu_first_run_print_card_detect()
     if (!card.isOk())
     {
         lcd_info_screen(lcd_menu_main);
-        DRAW_PROGRESS_NR(21);
+        DRAW_PROGRESS_NR(22);
         lcd_lib_draw_string_centerP(30, PSTR("Reading card..."));
         lcd_lib_update_screen();
         card.initsd();
@@ -530,7 +567,7 @@ static void lcd_menu_first_run_print_card_detect()
 
     SELECT_MAIN_MENU_ITEM(0);
     lcd_info_screen(lcd_menu_print_select, NULL, PSTR("LET'S PRINT"));
-    DRAW_PROGRESS_NR(21);
+    DRAW_PROGRESS_NR(22);
     lcd_lib_draw_string_centerP(10, PSTR("Select a print file"));
     lcd_lib_draw_string_centerP(20, PSTR("on the SD-card"));
     lcd_lib_draw_string_centerP(30, PSTR("and press the button"));
