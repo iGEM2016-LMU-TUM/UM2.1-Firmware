@@ -104,7 +104,7 @@ static void homeAndParkHeadForCenterAdjustment()
 {
     enquecommand_P(PSTR("G28 X0 Y0"));
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), 35, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
+    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), 70, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
     enquecommand(buffer);
 }
 
