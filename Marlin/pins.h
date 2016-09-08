@@ -1199,8 +1199,8 @@
 #define E1_STEP_PIN         49
 #define E1_DIR_PIN          47
 #define E1_ENABLE_PIN       48
-#define E1_MIN_PIN 65 // called PK3 or A11; exposed on ADC2 connector
-#define E1_MAX_PIN 66 // called PK4 or A12; exposed on ADC2 connector
+#define E1_MAX_PIN 65 // called PK3 or A11; exposed on ADC2 connector
+#define E1_MIN_PIN 66 // called PK4 or A12; exposed on ADC2 connector
 
 #define SDPOWER            -1
 #define SDSS               53
