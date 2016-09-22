@@ -432,18 +432,11 @@ void lcd_menu_print_select()
                     {
                         //New style GCode flavor without start/end code.
                         // Temperature settings, filament settings, fan settings, start and end-code are machine controlled.
-#if TEMP_SENSOR_BED != 0
-                        target_temperature_bed = 0;
-#endif
                         fanSpeedPercent = 0;
                         for(uint8_t e=0; e<EXTRUDERS; e++)
                         {
                             if (LCD_DETAIL_CACHE_MATERIAL(e) < 1)
                                 continue;
-                            target_temperature[e] = 0;
-#if TEMP_SENSOR_BED != 0
-                            target_temperature_bed = max(target_temperature_bed, material[e].bed_temperature);
-#endif
                             fanSpeedPercent = max(fanSpeedPercent, material[e].fan_speed);
                             volume_to_filament_length[e] = 1.0 / (M_PI * (material[e].diameter / 2.0) * (material[e].diameter / 2.0));
                             extrudemultiply[e] = material[e].flow;
@@ -492,50 +485,28 @@ static void lcd_menu_print_heatup()
 {
     lcd_question_screen(lcd_menu_print_tune, NULL, PSTR("TUNE"), lcd_menu_print_abort, NULL, PSTR("ABORT"));
 
-#if TEMP_SENSOR_BED != 0
-    if (current_temperature_bed > target_temperature_bed - 10)
-    {
-#endif
         for(uint8_t e=0; e<EXTRUDERS; e++)
         {
-            if (LCD_DETAIL_CACHE_MATERIAL(e) < 1 || target_temperature[e] > 0)
+            if (LCD_DETAIL_CACHE_MATERIAL(e) < 1 || 100 > 0)
                 continue;
-            target_temperature[e] = material[e].temperature[nozzleSizeToTemperatureIndex(LCD_DETAIL_CACHE_NOZZLE_DIAMETER(e))];
         }
 
-        if (current_temperature_bed >= target_temperature_bed - TEMP_WINDOW * 2 && !is_command_queued())
+        if (!is_command_queued())
         {
-            bool ready = true;
-            for(uint8_t e=0; e<EXTRUDERS; e++)
-                if (current_temperature[e] < target_temperature[e] - TEMP_WINDOW)
-                    ready = false;
-
-            if (ready)
-            {
-                doStartPrint();
-                currentMenu = lcd_menu_print_printing;
-            }
+            doStartPrint();
+            currentMenu = lcd_menu_print_printing;
         }
-#if TEMP_SENSOR_BED != 0
-    }
-#endif
 
     uint8_t progress = 125;
     for(uint8_t e=0; e<EXTRUDERS; e++)
     {
-        if (LCD_DETAIL_CACHE_MATERIAL(e) < 1 || target_temperature[e] < 1)
+        if (LCD_DETAIL_CACHE_MATERIAL(e) < 1)
             continue;
-        if (current_temperature[e] > 20)
-            progress = min(progress, (current_temperature[e] - 20) * 125 / (target_temperature[e] - 20 - TEMP_WINDOW));
+        if (100 > 20)
+            progress = min(progress, (100 - 20) * 125 / (100 - 20 - TEMP_WINDOW));
         else
             progress = 0;
     }
-#if TEMP_SENSOR_BED != 0
-    if (current_temperature_bed > 20)
-        progress = min(progress, (current_temperature_bed - 20) * 125 / (target_temperature_bed - 20 - TEMP_WINDOW));
-    else if (target_temperature_bed > current_temperature_bed - 20)
-        progress = 0;
-#endif
 
     if (progress < minProgress)
         progress = minProgress;
@@ -595,14 +566,14 @@ static void lcd_menu_print_printing()
             lcd_lib_draw_string_centerP(20, PSTR("Heating"));
             c = int_to_string(dsp_temperature[0], buffer, PSTR("C"));
             *c++ = '/';
-            c = int_to_string(target_temperature[0], c, PSTR("C"));
+            c = int_to_string(100, c, PSTR("C"));
             lcd_lib_draw_string_center(30, buffer);
             break;
         case PRINT_STATE_HEATING_BED:
             lcd_lib_draw_string_centerP(20, PSTR("Heating buildplate"));
             c = int_to_string(dsp_temperature_bed, buffer, PSTR("C"));
             *c++ = '/';
-            c = int_to_string(target_temperature_bed, c, PSTR("C"));
+            c = int_to_string(100, c, PSTR("C"));
             lcd_lib_draw_string_center(30, buffer);
             break;
         }
@@ -726,31 +697,7 @@ static void lcd_menu_print_ready()
         analogWrite(LED_PIN, (led_glow << 1) * int(led_brightness_level) / 100);
     lcd_info_screen(lcd_menu_main, postPrintReady, PSTR("BACK TO MENU"));
     //unsigned long printTimeSec = (stoptime-starttime)/1000;
-    if (current_temperature[0] > 60 || current_temperature_bed > 40)
-    {
-        lcd_lib_draw_string_centerP(15, PSTR("Printer cooling down"));
-
-        int16_t progress = 124 - (current_temperature[0] - 60);
-        if (progress < 0) progress = 0;
-        if (progress > 124) progress = 124;
-
-        if (progress < minProgress)
-            progress = minProgress;
-        else
-            minProgress = progress;
-
-        lcd_progressbar(progress);
-        char buffer[16];
-        char* c = buffer;
-        for(uint8_t e=0; e<EXTRUDERS; e++)
-            c = int_to_string(dsp_temperature[e], c, PSTR("C "));
-#if TEMP_SENSOR_BED != 0
-        int_to_string(dsp_temperature_bed, c, PSTR("C"));
-#endif
-        lcd_lib_draw_string_center(25, buffer);
-    }else{
-        currentMenu = lcd_menu_print_ready_cooled_down;
-    }
+    currentMenu = lcd_menu_print_ready_cooled_down;
     lcd_lib_update_screen();
 }
 
@@ -813,14 +760,14 @@ static void tune_item_details_callback(uint8_t nr)
     {
         c = int_to_string(dsp_temperature[0], c, PSTR("C"));
         *c++ = '/';
-        c = int_to_string(target_temperature[0], c, PSTR("C"));
+        c = int_to_string(100, c, PSTR("C"));
     }
 #if EXTRUDERS > 1
     else if (nr == 4)
     {
         c = int_to_string(dsp_temperature[1], c, PSTR("C"));
         *c++ = '/';
-        c = int_to_string(target_temperature[1], c, PSTR("C"));
+        c = int_to_string(100, c, PSTR("C"));
     }
 #endif
 #if TEMP_SENSOR_BED != 0
@@ -828,7 +775,7 @@ static void tune_item_details_callback(uint8_t nr)
     {
         c = int_to_string(dsp_temperature_bed, c, PSTR("C"));
         *c++ = '/';
-        c = int_to_string(target_temperature_bed, c, PSTR("C"));
+        c = int_to_string(100, c, PSTR("C"));
     }
 #endif
     else if (nr == 3 + BED_MENU_OFFSET + EXTRUDERS)
@@ -854,12 +801,7 @@ void lcd_menu_print_tune_heatup_nozzle0()
 {
     if (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM != 0)
     {
-        target_temperature[0] = int(target_temperature[0]) + (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM);
-        if (target_temperature[0] < 0)
-            target_temperature[0] = 0;
-        if (target_temperature[0] > HEATER_0_MAXTEMP - 15)
-            target_temperature[0] = HEATER_0_MAXTEMP - 15;
-        lcd_lib_encoder_pos = 0;
+         lcd_lib_encoder_pos = 0;
     }
     if (lcd_lib_button_pressed)
         lcd_change_to_menu(previousMenu, previousEncoderPos);
@@ -869,7 +811,7 @@ void lcd_menu_print_tune_heatup_nozzle0()
     lcd_lib_draw_string_centerP(53, PSTR("Click to return"));
     char buffer[16];
     int_to_string(int(dsp_temperature[0]), buffer, PSTR("C/"));
-    int_to_string(int(target_temperature[0]), buffer+strlen(buffer), PSTR("C"));
+    int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
     lcd_lib_draw_string_center(30, buffer);
     lcd_lib_update_screen();
 }
@@ -878,11 +820,6 @@ void lcd_menu_print_tune_heatup_nozzle1()
 {
     if (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM != 0)
     {
-        target_temperature[1] = int(target_temperature[1]) + (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM);
-        if (target_temperature[1] < 0)
-            target_temperature[1] = 0;
-        if (target_temperature[1] > HEATER_0_MAXTEMP - 15)
-            target_temperature[1] = HEATER_0_MAXTEMP - 15;
         lcd_lib_encoder_pos = 0;
     }
     if (lcd_lib_button_pressed)
@@ -893,7 +830,7 @@ void lcd_menu_print_tune_heatup_nozzle1()
     lcd_lib_draw_string_centerP(53, PSTR("Click to return"));
     char buffer[16];
     int_to_string(int(dsp_temperature[1]), buffer, PSTR("C/"));
-    int_to_string(int(target_temperature[1]), buffer+strlen(buffer), PSTR("C"));
+    int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
     lcd_lib_draw_string_center(30, buffer);
     lcd_lib_update_screen();
 }

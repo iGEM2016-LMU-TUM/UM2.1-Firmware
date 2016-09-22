@@ -33,10 +33,6 @@ void manage_heater(); //it is critical that this is called periodically.
 
 // low level conversion routines
 // do not use these routines and variables outside of temperature.cpp
-extern int target_temperature[EXTRUDERS];
-extern float current_temperature[EXTRUDERS];
-extern int target_temperature_bed;
-extern float current_temperature_bed;
 #ifdef TEMP_SENSOR_1_AS_REDUNDANT
   extern float redundant_temperature;
 #endif
@@ -58,49 +54,41 @@ extern float current_temperature_bed;
 //deg=degreeCelsius
 
 FORCE_INLINE float degHotend(uint8_t extruder) {
-  return current_temperature[extruder];
+  return 100;
 };
 
 FORCE_INLINE float degBed() {
-  return current_temperature_bed;
+  return 100;
 };
 
 FORCE_INLINE float degTargetHotend(uint8_t extruder) {
-  return target_temperature[extruder];
+  return 100;
 };
 
 FORCE_INLINE float degTargetBed() {
-  return target_temperature_bed;
+  return 100;
 };
 
 FORCE_INLINE void setTargetHotend(const float &celsius, uint8_t extruder) {
-  target_temperature[extruder] = celsius;
-  if (target_temperature[extruder] >= HEATER_0_MAXTEMP - 15)
-    target_temperature[extruder] = HEATER_0_MAXTEMP - 15;
 };
 
 FORCE_INLINE void setTargetBed(const float &celsius) {
-  target_temperature_bed = celsius;
-#ifdef BED_MAXTEMP
-  if (target_temperature_bed >= BED_MAXTEMP - 15)
-    target_temperature_bed = BED_MAXTEMP - 15;
-#endif
 };
 
 FORCE_INLINE bool isHeatingHotend(uint8_t extruder){
-  return target_temperature[extruder] > current_temperature[extruder];
+  return false;
 };
 
 FORCE_INLINE bool isHeatingBed() {
-  return target_temperature_bed > current_temperature_bed;
+  return false;
 };
 
 FORCE_INLINE bool isCoolingHotend(uint8_t extruder) {
-  return target_temperature[extruder] < current_temperature[extruder];
+  return false;
 };
 
 FORCE_INLINE bool isCoolingBed() {
-  return target_temperature_bed < current_temperature_bed;
+  return false;
 };
 
 #define degHotend0() degHotend(0)

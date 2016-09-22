@@ -1180,13 +1180,13 @@
 #define Z_STOP_PIN 29
 #define Z_ENABLE_PIN 34
 
-#define HEATER_BED_PIN 4
-#define TEMP_BED_PIN 10
+#define HEATER_BED_PIN -1
+#define TEMP_BED_PIN -1
 
-#define HEATER_0_PIN  2
-#define TEMP_0_PIN 8
+#define HEATER_0_PIN  -1
+#define TEMP_0_PIN -1
 
-#define HEATER_1_PIN 3
+#define HEATER_1_PIN -1
 #define TEMP_1_PIN -1
 
 #define HEATER_2_PIN -1

@@ -129,9 +129,9 @@ void lcd_update()
         // refresh the displayed temperatures
         for(uint8_t e=0;e<EXTRUDERS;e++)
         {
-            dsp_temperature[e] = (ALPHA * current_temperature[e]) + (ONE_MINUS_ALPHA * dsp_temperature[e]);
+            dsp_temperature[e] = (ALPHA * 100) + (ONE_MINUS_ALPHA * dsp_temperature[e]);
         }
-        dsp_temperature_bed = (ALPHA * current_temperature_bed) + (ONE_MINUS_ALPHA * dsp_temperature_bed);
+        dsp_temperature_bed = (ALPHA * 100) + (ONE_MINUS_ALPHA * dsp_temperature_bed);
         currentMenu();
         if (postMenuCheck) postMenuCheck();
     }

@@ -98,18 +98,18 @@ static void lcd_advanced_details(uint8_t nr)
     }else if (nr == 2)
     {
         int_to_string(int(dsp_temperature[0]), buffer, PSTR("C/"));
-        int_to_string(int(target_temperature[0]), buffer+strlen(buffer), PSTR("C"));
+        int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
 #if EXTRUDERS > 1
     }else if (nr == 3)
     {
         int_to_string(int(dsp_temperature[1]), buffer, PSTR("C/"));
-        int_to_string(int(target_temperature[1]), buffer+strlen(buffer), PSTR("C"));
+        int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
 #endif
 #if TEMP_SENSOR_BED != 0
     }else if (nr == 2 + EXTRUDERS)
     {
         int_to_string(int(dsp_temperature_bed), buffer, PSTR("C/"));
-        int_to_string(int(target_temperature_bed), buffer+strlen(buffer), PSTR("C"));
+        int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
 #endif
     }else if (nr == 6 + BED_MENU_OFFSET + EXTRUDERS * 2)
     {
@@ -188,7 +188,6 @@ static void lcd_menu_maintenance_advanced()
         {
             set_extrude_min_temp(0);
             active_extruder = 0;
-            target_temperature[active_extruder] = material[active_extruder].temperature[0];
             lcd_change_to_menu(lcd_menu_maintenance_extrude, 0);
         }
 #if EXTRUDERS > 1
@@ -196,7 +195,6 @@ static void lcd_menu_maintenance_advanced()
         {
             set_extrude_min_temp(0);
             active_extruder = 1;
-            target_temperature[active_extruder] = material[active_extruder].temperature[0];
             lcd_change_to_menu(lcd_menu_maintenance_extrude, 0);
         }
 #endif
@@ -217,11 +215,6 @@ static void lcd_menu_maintenance_advanced_heatup()
 {
     if (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM != 0)
     {
-        target_temperature[active_extruder] = int(target_temperature[active_extruder]) + (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM);
-        if (target_temperature[active_extruder] < 0)
-            target_temperature[active_extruder] = 0;
-        if (target_temperature[active_extruder] > HEATER_0_MAXTEMP - 15)
-            target_temperature[active_extruder] = HEATER_0_MAXTEMP - 15;
         lcd_lib_encoder_pos = 0;
     }
     if (lcd_lib_button_pressed)
@@ -232,7 +225,7 @@ static void lcd_menu_maintenance_advanced_heatup()
     lcd_lib_draw_string_centerP(53, PSTR("Click to return"));
     char buffer[16];
     int_to_string(int(dsp_temperature[active_extruder]), buffer, PSTR("C/"));
-    int_to_string(int(target_temperature[active_extruder]), buffer+strlen(buffer), PSTR("C"));
+    int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
     lcd_lib_draw_string_center(30, buffer);
     lcd_lib_update_screen();
 }
@@ -251,7 +244,6 @@ void lcd_menu_maintenance_extrude()
     if (lcd_lib_button_pressed)
     {
         set_extrude_min_temp(EXTRUDE_MINTEMP);
-        target_temperature[active_extruder] = 0;
         lcd_change_to_menu(previousMenu, previousEncoderPos);
     }
 
@@ -261,7 +253,7 @@ void lcd_menu_maintenance_extrude()
     lcd_lib_draw_string_centerP(53, PSTR("Click to return"));
     char buffer[16];
     int_to_string(int(dsp_temperature[active_extruder]), buffer, PSTR("C/"));
-    int_to_string(int(target_temperature[active_extruder]), buffer+strlen(buffer), PSTR("C"));
+    int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
     lcd_lib_draw_string_center(30, buffer);
     lcd_lib_update_screen();
 }
@@ -271,11 +263,7 @@ void lcd_menu_maintenance_advanced_bed_heatup()
 {
     if (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM != 0)
     {
-        target_temperature_bed = int(target_temperature_bed) + (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM);
-        if (target_temperature_bed < 0)
-            target_temperature_bed = 0;
-        if (target_temperature_bed > BED_MAXTEMP - 15)
-            target_temperature_bed = BED_MAXTEMP - 15;
+        target_temperature_bed = 100;
         lcd_lib_encoder_pos = 0;
     }
     if (lcd_lib_button_pressed)
@@ -286,7 +274,7 @@ void lcd_menu_maintenance_advanced_bed_heatup()
     lcd_lib_draw_string_centerP(53, PSTR("Click to return"));
     char buffer[16];
     int_to_string(int(dsp_temperature_bed), buffer, PSTR("C/"));
-    int_to_string(int(target_temperature_bed), buffer+strlen(buffer), PSTR("C"));
+    int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
     lcd_lib_draw_string_center(30, buffer);
     lcd_lib_update_screen();
 }

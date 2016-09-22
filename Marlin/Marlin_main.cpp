@@ -1467,25 +1467,6 @@ void process_commands()
         LCD_MESSAGEPGM(MSG_BED_HEATING);
         if (code_seen('S')) setTargetBed(code_value());
         codenum = millis();
-        while(current_temperature_bed < target_temperature_bed - TEMP_WINDOW)
-        {
-          if(( millis() - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up.
-          {
-            float tt=degHotend(active_extruder);
-            SERIAL_PROTOCOLPGM("T:");
-            SERIAL_PROTOCOL(tt);
-            SERIAL_PROTOCOLPGM(" E:");
-            SERIAL_PROTOCOL((int)active_extruder);
-            SERIAL_PROTOCOLPGM(" B:");
-            SERIAL_PROTOCOL_F(degBed(),1);
-            SERIAL_PROTOCOLLN("");
-            codenum = millis();
-          }
-          manage_heater();
-          manage_inactivity();
-          lcd_update();
-          lifetime_stats_tick();
-        }
         LCD_MESSAGEPGM(MSG_BED_DONE);
         previous_millis_cmd = millis();
     #endif
@@ -2209,11 +2190,10 @@ void process_commands()
       else
         tmp_select = 0;
       machinesettings_tempsave[tmp_select].feedmultiply = feedmultiply;
-      machinesettings_tempsave[tmp_select].BedTemperature = target_temperature_bed;
+      machinesettings_tempsave[tmp_select].BedTemperature = 100;
       machinesettings_tempsave[tmp_select].fanSpeed = fanSpeed;
       for (int i=0; i<EXTRUDERS; i++)
       {
-        machinesettings_tempsave[tmp_select].HotendTemperature[i] = target_temperature[i];
         machinesettings_tempsave[tmp_select].extrudemultiply[i] = extrudemultiply[i];
       }
       for (int i=0; i<NUM_AXIS; i++)
@@ -2245,11 +2225,9 @@ void process_commands()
       if (machinesettings_tempsave[tmp_select].has_saved_settings > 0)
       {
         feedmultiply = machinesettings_tempsave[tmp_select].feedmultiply;
-        target_temperature_bed = machinesettings_tempsave[tmp_select].BedTemperature;
         fanSpeed = machinesettings_tempsave[tmp_select].fanSpeed;
         for (int i=0; i<EXTRUDERS; i++)
         {
-          target_temperature[i] = machinesettings_tempsave[tmp_select].HotendTemperature[i];
           extrudemultiply[i] = machinesettings_tempsave[tmp_select].extrudemultiply[i];
         }
         for (int i=0; i<NUM_AXIS; i++)
