@@ -180,7 +180,7 @@ float extruder_offset[2][EXTRUDERS] = {
 #endif
 };
 #endif
-uint8_t active_extruder = 0;
+uint8_t active_extruder = 1;
 uint8_t fanSpeed=0;
 uint8_t fanSpeedPercent=100;
 
