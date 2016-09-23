@@ -15,7 +15,7 @@
 #define INITIAL_SAFETY_HEIGHT (Z_MAX_POS/2)
 #define SAFETY_HEIGHT 10
 #define BED_CENTER_ADJUST_X (X_MAX_POS/2)
-#define BED_CENTER_ADJUST_Y (Y_MAX_POS - 20) // FIXME refine
+#define BED_CENTER_ADJUST_Y (Y_MAX_POS - 20)
 #define BED_LEFT_ADJUST_X (X_MIN_POS + 10)
 #define BED_LEFT_ADJUST_Y (Y_MIN_POS + 20)
 #define BED_RIGHT_ADJUST_X (X_MAX_POS - 10)
@@ -276,7 +276,7 @@ static void parkHeadForMiddleAdjustment()
     char buffer[32];
     sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT);
     enquecommand(buffer);
-    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), X_MAX_POS/2, Y_MAX_POS/2);
+    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), X_MAX_POS/2 + 5 - EXTRUDER_X_OFFSET, Y_MAX_POS/2 - EXTRUDER_Y_OFFSET);
     enquecommand(buffer);
     sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT / 2);
     enquecommand(buffer);
