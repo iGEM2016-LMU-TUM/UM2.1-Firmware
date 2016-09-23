@@ -235,9 +235,9 @@ static void lcd_menu_first_run_bed_level_paper_center()
     if (printing_state == PRINT_STATE_NORMAL && lcd_lib_encoder_pos != 0 && movesplanned() < 4)
     {
         current_position[Z_AXIS] -= float(lcd_lib_encoder_pos) * 0.05;
-        lcd_lib_encoder_pos = 0;
         plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 60, 0);
     }
+    lcd_lib_encoder_pos = 0;
 
     if (movesplanned() > 0)
         lcd_info_screen(NULL, NULL, PSTR("CONTINUE"));
@@ -291,12 +291,12 @@ static void lcd_menu_first_run_bed_level_middle_height()
     if (printing_state == PRINT_STATE_NORMAL && lcd_lib_encoder_pos != 0 && movesplanned() < 4)
     {
         current_position[Z_AXIS] -= float(lcd_lib_encoder_pos) * 0.05;
-        lcd_lib_encoder_pos = 0;
         plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 60, 0);
     }
+    lcd_lib_encoder_pos = 0;
 
     if (movesplanned() > 0)
-        lcd_info_screen(NULL, NULL, PSTR("CONTINUE"));
+        lcd_info_screen(NULL, NULL, IS_FIRST_RUN_DONE() ? PSTR("DONE") : PSTR("CONTINUE"));
     else {
         if (IS_FIRST_RUN_DONE())
             lcd_info_screen(lcd_menu_main, homeBed, PSTR("DONE"));
