@@ -131,16 +131,13 @@ static void doStartPrint()
 	// since we are going to prime the nozzle, forget about any G10/G11 retractions that happened at end of previous print
 	retracted = false;
 
-    for(uint8_t e = 0; e<EXTRUDERS; e++)
-    {
-        if (!LCD_DETAIL_CACHE_MATERIAL(e))
+        if (!LCD_DETAIL_CACHE_MATERIAL(active_extruder))
         {
         	// don't prime the extruder if it isn't used in the (Ulti)gcode
         	// traditional gcode files typically won't have the Material lines at start, so we won't prime for those
         	// Also, on dual/multi extrusion files, only prime the extruders that are used in the gcode-file.
-            continue;
+            goto end;
         }
-        active_extruder = e;
 
         if (!primed)
         {
@@ -152,23 +149,14 @@ static void doStartPrint()
         }
 
         // undo the end-of-print retraction
-        plan_set_e_position((0.0 - END_OF_PRINT_RETRACTION) / volume_to_filament_length[e]);
-        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], END_OF_PRINT_RECOVERY_SPEED, e);
+        plan_set_e_position((0.0 - END_OF_PRINT_RETRACTION) / volume_to_filament_length[active_extruder]);
+        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], END_OF_PRINT_RECOVERY_SPEED, active_extruder);
 
         // perform additional priming
         plan_set_e_position(-PRIMING_MM3);
-        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], (PRIMING_MM3_PER_SEC * volume_to_filament_length[e]), e);
+        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], (PRIMING_MM3_PER_SEC * volume_to_filament_length[active_extruder]), active_extruder);
 
-#if EXTRUDERS > 1
-        // for extruders other than the first one, perform end of print retraction
-        if (e > 0)
-        {
-            plan_set_e_position((END_OF_PRINT_RETRACTION) / volume_to_filament_length[e]);
-            plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], retract_feedrate/60, e);
-        }
-#endif
-    }
-    active_extruder = 0;
+end:
     primed = true;
 
     postMenuCheck = checkPrintFinished;
@@ -400,7 +388,6 @@ void lcd_menu_print_select()
             if (!card.filenameIsDir)
             {
                 //Start print
-                active_extruder = 0;
                 card.openFile(card.filename, true);
                 if (card.isFileOpen() && !is_command_queued())
                 {

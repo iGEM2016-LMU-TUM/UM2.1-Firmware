@@ -58,29 +58,7 @@ static void cancelMaterialInsert()
 
 void lcd_menu_material()
 {
-#if EXTRUDERS > 1
-    lcd_tripple_menu(PSTR("PRIMARY|NOZZLE"), PSTR("SECONDARY|NOZZLE"), PSTR("RETURN"));
-
-    if (lcd_lib_button_pressed)
-    {
-        if (IS_SELECTED_MAIN(0))
-        {
-            active_extruder = 0;
-            lcd_change_to_menu(lcd_menu_material_main);
-        }
-        else if (IS_SELECTED_MAIN(1))
-        {
-            active_extruder = 1;
-            lcd_change_to_menu(lcd_menu_material_main);
-        }
-        else if (IS_SELECTED_MAIN(2))
-            lcd_change_to_menu(lcd_menu_main);
-    }
-
-    lcd_lib_update_screen();
-#else
     currentMenu = lcd_menu_material_main;
-#endif
 }
 
 static void lcd_menu_material_main_return()
@@ -723,12 +701,7 @@ static void lcd_menu_material_selected()
     lcd_info_screen(post_change_material_menu, NULL, PSTR("OK"));
     lcd_lib_draw_string_centerP(20, PSTR("Selected material:"));
     lcd_lib_draw_string_center(30, card.longFilename);
-#if EXTRUDERS > 1
-    if (active_extruder == 0)
-        lcd_lib_draw_string_centerP(40, PSTR("for primary nozzle"));
-    else if (active_extruder == 1)
-        lcd_lib_draw_string_centerP(40, PSTR("for secondary nozzle"));
-#endif
+    lcd_lib_draw_string_centerP(40, PSTR("for secondary nozzle"));
     lcd_lib_update_screen();
 }
 
