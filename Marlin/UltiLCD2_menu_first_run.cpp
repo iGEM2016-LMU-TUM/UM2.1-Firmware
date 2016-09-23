@@ -12,6 +12,7 @@
 #include "UltiLCD2_menu_first_run.h"
 #include "UltiLCD2_menu_print.h"
 
+#define INITIAL_SAFETY_HEIGHT (Z_MAX_POS/2)
 #define SAFETY_HEIGHT 10
 #define BED_CENTER_ADJUST_X (X_MAX_POS/2)
 #define BED_CENTER_ADJUST_Y (Y_MAX_POS - 20) // FIXME refine
@@ -66,7 +67,7 @@ static void homeAndParkHeadForCenterAdjustment2()
     add_homeing[Z_AXIS] = 0;
     enquecommand_P(PSTR("G28 Z0 X0 Y0"));
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), 35, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
+    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), INITIAL_SAFETY_HEIGHT, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
     enquecommand(buffer);
 }
 //Started bed leveling from the calibration menu
@@ -84,7 +85,7 @@ static void homeAndRaiseBed()
 {
     enquecommand_P(PSTR("G28 Z0"));
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[0]), 35);
+    sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[0]), INITIAL_SAFETY_HEIGHT);
     enquecommand(buffer);
 }
 
