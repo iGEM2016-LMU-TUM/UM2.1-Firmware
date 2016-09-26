@@ -12,8 +12,6 @@
 #include "UltiLCD2_menu_material.h"
 #include "UltiLCD2_menu_maintenance.h"
 
-#define HEATUP_POSITION_COMMAND "G1 F12000 X5 Y10"
-
 uint8_t lcd_cache[LCD_CACHE_SIZE];
 #define LCD_CACHE_NR_OF_FILES() lcd_cache[(LCD_CACHE_COUNT*(LONG_FILENAME_LENGTH+2))]
 #define LCD_CACHE_ID(n) lcd_cache[(n)]
@@ -432,7 +430,12 @@ void lcd_menu_print_select()
                         }
 
                         enquecommand_P(PSTR("G28"));
-                        enquecommand_P(PSTR(HEATUP_POSITION_COMMAND));
+                        {
+                          char buffer[32];
+                          sprintf_P(buffer, PSTR("G1 F12000 X%i Y%i"), X_MAX_POS/2 -15 - EXTRUDER_X_OFFSET, Y_MAX_POS/2 +20 - EXTRUDER_Y_OFFSET);
+                          enquecommand(buffer);
+                        }
+
                         lcd_change_to_menu(lcd_menu_print_heatup);
 
                         if (strcasecmp(material[0].name, LCD_DETAIL_CACHE_MATERIAL_TYPE(0)) != 0)
