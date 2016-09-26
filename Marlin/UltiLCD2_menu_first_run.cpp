@@ -105,7 +105,7 @@ static void homeAndParkHeadForCenterAdjustment()
 {
     enquecommand_P(PSTR("G28 X0 Y0"));
     char buffer[32];
-    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), 70, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
+    sprintf_P(buffer, PSTR("G1 F%i Z%i X%i Y%i"), int(homing_feedrate[0]), INITIAL_SAFETY_HEIGHT, BED_CENTER_ADJUST_X, BED_CENTER_ADJUST_Y);
     enquecommand(buffer);
 }
 
@@ -276,7 +276,7 @@ static void parkHeadForMiddleAdjustment()
     char buffer[32];
     sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT);
     enquecommand(buffer);
-    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), X_MAX_POS/2 + 5 - EXTRUDER_X_OFFSET, Y_MAX_POS/2 - EXTRUDER_Y_OFFSET);
+    sprintf_P(buffer, PSTR("G1 F%i X%i Y%i"), int(homing_feedrate[X_AXIS]), X_MAX_POS/2 - 5 - EXTRUDER_X_OFFSET, Y_MAX_POS/2 - EXTRUDER_Y_OFFSET);
     enquecommand(buffer);
     sprintf_P(buffer, PSTR("G1 F%i Z%i"), int(homing_feedrate[Z_AXIS]), SAFETY_HEIGHT / 2);
     enquecommand(buffer);
