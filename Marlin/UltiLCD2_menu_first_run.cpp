@@ -244,10 +244,8 @@ static void lcd_menu_first_run_bed_level_paper_center()
     else
         lcd_info_screen(lcd_menu_first_run_bed_level_paper_left, parkHeadForLeftAdjustment, PSTR("CONTINUE"));
     DRAW_PROGRESS_NR_IF_NOT_DONE(8);
-    lcd_lib_draw_string_centerP(10, PSTR("Slide a paper between"));
-    lcd_lib_draw_string_centerP(20, PSTR("buildplate and nozzle"));
-    lcd_lib_draw_string_centerP(30, PSTR("until you feel a"));
-    lcd_lib_draw_string_centerP(40, PSTR("bit resistance."));
+    lcd_lib_draw_string_centerP(10, PSTR("Now render it more"));
+    lcd_lib_draw_string_centerP(20, PSTR("precisely."));
     lcd_lib_update_screen();
 }
 
@@ -265,7 +263,8 @@ static void lcd_menu_first_run_bed_level_paper_left()
 
 static void homeBed()
 {
-    add_homeing[Z_AXIS] += LEVELING_OFFSET;  //Adjust the Z homing position to account for the thickness of the paper.
+    add_homeing[Z_AXIS] -= current_position[Z_AXIS];
+    current_position[Z_AXIS] = 0;
     // now that we are finished, save the settings to EEPROM
     Config_StoreSettings();
     enquecommand_P(PSTR("G28 Z0"));
