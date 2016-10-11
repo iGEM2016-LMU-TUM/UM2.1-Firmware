@@ -21,8 +21,8 @@ uint8_t lcd_cache[LCD_CACHE_SIZE];
 #define LCD_DETAIL_CACHE_ID() lcd_cache[LCD_DETAIL_CACHE_START]
 #define LCD_DETAIL_CACHE_TIME() (*(uint32_t*)&lcd_cache[LCD_DETAIL_CACHE_START+1])
 #define LCD_DETAIL_CACHE_MATERIAL(n) (*(uint32_t*)&lcd_cache[LCD_DETAIL_CACHE_START+5+4*n])
-#define LCD_DETAIL_CACHE_NOZZLE_DIAMETER(n) (*(float*)&lcd_cache[LCD_DETAIL_CACHE_START+5+4*EXTRUDERS+4*n])
-#define LCD_DETAIL_CACHE_MATERIAL_TYPE(n) ((char*)&lcd_cache[LCD_DETAIL_CACHE_START+5+8*EXTRUDERS+8*n])
+#define LCD_DETAIL_CACHE_NOZZLE_DIAMETER(n) (*(float*)&lcd_cache[LCD_DETAIL_CACHE_START+5+4+4*n])
+#define LCD_DETAIL_CACHE_MATERIAL_TYPE(n) ((char*)&lcd_cache[LCD_DETAIL_CACHE_START+5+8+8*n])
 
 void doCooldown();//TODO
 static void lcd_menu_print_heatup();
@@ -72,7 +72,7 @@ static void abortPrint()
     if (primed)
     {
         // set up the end of print retraction
-        sprintf_P(buffer, PSTR("G92 E%i"), int(((float)END_OF_PRINT_RETRACTION) / volume_to_filament_length[active_extruder]));
+        sprintf_P(buffer, PSTR("G92 E%i"), int(((float)END_OF_PRINT_RETRACTION) / volume_to_filament_length[1]));
         enquecommand(buffer);
         // perform the retraction at the standard retract speed
         sprintf_P(buffer, PSTR("G1 F%i E0"), int(retract_feedrate));
@@ -129,30 +129,24 @@ static void doStartPrint()
 	// since we are going to prime the nozzle, forget about any G10/G11 retractions that happened at end of previous print
 	retracted = false;
 
-        if (!LCD_DETAIL_CACHE_MATERIAL(active_extruder))
-        {
-        	// don't prime the extruder if it isn't used in the (Ulti)gcode
-        	// traditional gcode files typically won't have the Material lines at start, so we won't prime for those
-        	// Also, on dual/multi extrusion files, only prime the extruders that are used in the gcode-file.
-            goto end;
-        }
+	goto end;
 
         if (!primed)
         {
             // move to priming height
             current_position[Z_AXIS] = PRIMING_HEIGHT;
-            plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[Z_AXIS], active_extruder);
+            plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[Z_AXIS], 1);
             // note that we have primed, so that we know to de-prime at the end
             primed = true;
         }
 
         // undo the end-of-print retraction
-        plan_set_e_position((0.0 - END_OF_PRINT_RETRACTION) / volume_to_filament_length[active_extruder]);
-        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], END_OF_PRINT_RECOVERY_SPEED, active_extruder);
+        plan_set_e_position((0.0 - END_OF_PRINT_RETRACTION) / volume_to_filament_length[1]);
+        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], END_OF_PRINT_RECOVERY_SPEED, 1);
 
         // perform additional priming
         plan_set_e_position(-PRIMING_MM3);
-        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], (PRIMING_MM3_PER_SEC * volume_to_filament_length[active_extruder]), active_extruder);
+        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], (PRIMING_MM3_PER_SEC * volume_to_filament_length[1]), 1);
 
 end:
     primed = true;
@@ -237,11 +231,10 @@ void lcd_sd_menu_details_callback(uint8_t nr)
                     }
                     LCD_DETAIL_CACHE_ID() = nr;
                     LCD_DETAIL_CACHE_TIME() = 0;
-                    for(uint8_t e=0; e<EXTRUDERS; e++)
                     {
-                        LCD_DETAIL_CACHE_MATERIAL(e) = 0;
-                        LCD_DETAIL_CACHE_NOZZLE_DIAMETER(e) = 0.4;
-                        LCD_DETAIL_CACHE_MATERIAL_TYPE(e)[0] = '\0';
+                        LCD_DETAIL_CACHE_MATERIAL(1) = 0;
+                        LCD_DETAIL_CACHE_NOZZLE_DIAMETER(1) = 0.4;
+                        LCD_DETAIL_CACHE_MATERIAL_TYPE(1)[0] = '\0';
                     }
                     card.openFile(card.filename, true);
                     if (card.isFileOpen())
@@ -254,25 +247,14 @@ void lcd_sd_menu_details_callback(uint8_t nr)
                             if (strncmp_P(buffer, PSTR(";TIME:"), 6) == 0)
                                 LCD_DETAIL_CACHE_TIME() = atol(buffer + 6);
                             else if (strncmp_P(buffer, PSTR(";MATERIAL:"), 10) == 0)
-                                LCD_DETAIL_CACHE_MATERIAL(0) = atol(buffer + 10);
+                                LCD_DETAIL_CACHE_MATERIAL(1) = atol(buffer + 10);
                             else if (strncmp_P(buffer, PSTR(";NOZZLE_DIAMETER:"), 17) == 0)
-                                LCD_DETAIL_CACHE_NOZZLE_DIAMETER(0) = strtod(buffer + 17, NULL);
+                                LCD_DETAIL_CACHE_NOZZLE_DIAMETER(1) = strtod(buffer + 17, NULL);
                             else if (strncmp_P(buffer, PSTR(";MTYPE:"), 7) == 0)
                             {
-                                strncpy(LCD_DETAIL_CACHE_MATERIAL_TYPE(0), buffer + 7, 8);
-                                LCD_DETAIL_CACHE_MATERIAL_TYPE(0)[7] = '\0';
-                            }
-#if EXTRUDERS > 1
-                            else if (strncmp_P(buffer, PSTR(";MATERIAL2:"), 11) == 0)
-                                LCD_DETAIL_CACHE_MATERIAL(1) = atol(buffer + 11);
-                            else if (strncmp_P(buffer, PSTR(";NOZZLE_DIAMETER2:"), 18) == 0)
-                                LCD_DETAIL_CACHE_NOZZLE_DIAMETER(1) = strtod(buffer + 18, NULL);
-                            else if (strncmp_P(buffer, PSTR(";MTYPE2:"), 8) == 0)
-                            {
-                                strncpy(LCD_DETAIL_CACHE_MATERIAL_TYPE(1), buffer + 8, 8);
+                                strncpy(LCD_DETAIL_CACHE_MATERIAL_TYPE(1), buffer + 7, 8);
                                 LCD_DETAIL_CACHE_MATERIAL_TYPE(1)[7] = '\0';
                             }
-#endif
                             
                         }
                     }
@@ -295,26 +277,15 @@ void lcd_sd_menu_details_callback(uint8_t nr)
                             c = int_to_time_string(LCD_DETAIL_CACHE_TIME(), c);
                         }else{
                             strcpy_P(c, PSTR("Material: ")); c += 10;
-                            float length = float(LCD_DETAIL_CACHE_MATERIAL(0)) / (M_PI * (material[0].diameter / 2.0) * (material[0].diameter / 2.0));
+                            float length = float(LCD_DETAIL_CACHE_MATERIAL(1)) / (M_PI * (material[1].diameter / 2.0) * (material[1].diameter / 2.0));
                             if (length < 10000)
                                 c = float_to_string(length / 1000.0, c, PSTR("m"));
                             else
                                 c = int_to_string(length / 1000.0, c, PSTR("m"));
-#if EXTRUDERS > 1
-                            if (LCD_DETAIL_CACHE_MATERIAL(1))
-                            {
-                                *c++ = '/';
-                                float length = float(LCD_DETAIL_CACHE_MATERIAL(1)) / (M_PI * (material[1].diameter / 2.0) * (material[1].diameter / 2.0));
-                                if (length < 10000)
-                                    c = float_to_string(length / 1000.0, c, PSTR("m"));
-                                else
-                                    c = int_to_string(length / 1000.0, c, PSTR("m"));
-                            }
-#endif
                         }
                     }else{
                         strcpy_P(c, PSTR("Nozzle: ")); c += 8;
-                        c = float_to_string(LCD_DETAIL_CACHE_NOZZLE_DIAMETER(0), c);
+                        c = float_to_string(LCD_DETAIL_CACHE_NOZZLE_DIAMETER(1), c);
                     }
                     lcd_lib_draw_string(3, 53, buffer);
                 }else{
@@ -418,10 +389,8 @@ void lcd_menu_print_select()
                         //New style GCode flavor without start/end code.
                         // Temperature settings, filament settings, fan settings, start and end-code are machine controlled.
                         fanSpeedPercent = 0;
-                        for(uint8_t e=0; e<EXTRUDERS; e++)
                         {
-                            if (LCD_DETAIL_CACHE_MATERIAL(e) < 1)
-                                continue;
+                            uint8_t e=1;
                             fanSpeedPercent = max(fanSpeedPercent, material[e].fan_speed);
                             volume_to_filament_length[e] = 1.0 / (M_PI * (material[e].diameter / 2.0) * (material[e].diameter / 2.0));
                             extrudemultiply[e] = material[e].flow;
@@ -438,9 +407,9 @@ void lcd_menu_print_select()
 
                         lcd_change_to_menu(lcd_menu_print_heatup);
 
-                        if (strcasecmp(material[0].name, LCD_DETAIL_CACHE_MATERIAL_TYPE(0)) != 0)
+                        if (strcasecmp(material[0].name, LCD_DETAIL_CACHE_MATERIAL_TYPE(1)) != 0)
                         {
-                            if (strlen(material[0].name) > 0 && strlen(LCD_DETAIL_CACHE_MATERIAL_TYPE(0)) > 0)
+                            if (strlen(material[0].name) > 0 && strlen(LCD_DETAIL_CACHE_MATERIAL_TYPE(1)) > 0)
                             {
                                 currentMenu = lcd_menu_print_material_warning;
                             }
@@ -450,8 +419,8 @@ void lcd_menu_print_select()
 
                         //Set the settings to defaults so the classic GCode has full control
                         fanSpeedPercent = 100;
-                        for(uint8_t e=0; e<EXTRUDERS; e++)
                         {
+                            uint8_t e=1;
                             volume_to_filament_length[e] = 1.0;
                             extrudemultiply[e] = 100;
                         }
@@ -475,12 +444,6 @@ static void lcd_menu_print_heatup()
 {
     lcd_question_screen(lcd_menu_print_tune, NULL, PSTR("TUNE"), lcd_menu_print_abort, NULL, PSTR("ABORT"));
 
-        for(uint8_t e=0; e<EXTRUDERS; e++)
-        {
-            if (LCD_DETAIL_CACHE_MATERIAL(e) < 1 || 100 > 0)
-                continue;
-        }
-
         if (!is_command_queued())
         {
             doStartPrint();
@@ -488,10 +451,8 @@ static void lcd_menu_print_heatup()
         }
 
     uint8_t progress = 125;
-    for(uint8_t e=0; e<EXTRUDERS; e++)
     {
-        if (LCD_DETAIL_CACHE_MATERIAL(e) < 1)
-            continue;
+        uint8_t e=1;
         if (100 > 20)
             progress = min(progress, (100 - 20) * 125 / (100 - 20 - TEMP_WINDOW));
         else
@@ -515,7 +476,7 @@ static void lcd_menu_print_heatup()
 static void lcd_change_to_menu_change_material_return()
 {
     plan_set_e_position(current_position[E_AXIS]);
-    setTargetHotend(material[active_extruder].temperature[nozzleSizeToTemperatureIndex(LCD_DETAIL_CACHE_NOZZLE_DIAMETER(active_extruder))], active_extruder);
+    setTargetHotend(material[1].temperature[nozzleSizeToTemperatureIndex(LCD_DETAIL_CACHE_NOZZLE_DIAMETER(1))], 1);
     currentMenu = lcd_menu_print_printing;
 }
 
@@ -657,7 +618,7 @@ static void lcd_menu_print_material_warning()
     lcd_lib_draw_string_centerP(20, PSTR("for a different"));
     lcd_lib_draw_string_centerP(30, PSTR("material."));
     char buffer[MATERIAL_NAME_SIZE * 2 + 5];
-    sprintf_P(buffer, PSTR("%s vs %s"), material[0].name, LCD_DETAIL_CACHE_MATERIAL_TYPE(0));
+    sprintf_P(buffer, PSTR("%s vs %s"), material[0].name, LCD_DETAIL_CACHE_MATERIAL_TYPE(1));
     lcd_lib_draw_string_center(40, buffer);
 
     lcd_lib_update_screen();
@@ -718,25 +679,17 @@ static char* tune_item_callback(uint8_t nr)
         strcpy_P(c, PSTR("Speed"));
     else if (nr == 3)
         strcpy_P(c, PSTR("Temperature"));
-#if EXTRUDERS > 1
-    else if (nr == 4)
-        strcpy_P(c, PSTR("Temperature 2"));
-#endif
 #if TEMP_SENSOR_BED != 0
-    else if (nr == 3 + EXTRUDERS)
+    else if (nr == 4)
         strcpy_P(c, PSTR("Buildplate temp."));
 #endif
-    else if (nr == 3 + BED_MENU_OFFSET + EXTRUDERS)
+    else if (nr == 4 + BED_MENU_OFFSET)
         strcpy_P(c, PSTR("Fan speed"));
-    else if (nr == 4 + BED_MENU_OFFSET + EXTRUDERS)
+    else if (nr == 5 + BED_MENU_OFFSET)
         strcpy_P(c, PSTR("Material flow"));
-#if EXTRUDERS > 1
-    else if (nr == 5 + BED_MENU_OFFSET + EXTRUDERS)
-        strcpy_P(c, PSTR("Material flow 2"));
-#endif
-    else if (nr == 4 + BED_MENU_OFFSET + EXTRUDERS * 2)
+    else if (nr == 6 + BED_MENU_OFFSET)
         strcpy_P(c, PSTR("Retraction"));
-    else if (nr == 5 + BED_MENU_OFFSET + EXTRUDERS * 2)
+    else if (nr == 7 + BED_MENU_OFFSET)
         strcpy_P(c, PSTR("LED Brightness"));
     return c;
 }
@@ -748,35 +701,23 @@ static void tune_item_details_callback(uint8_t nr)
         c = int_to_string(feedmultiply, c, PSTR("%"));
     else if (nr == 3)
     {
-        c = int_to_string(dsp_temperature[0], c, PSTR("C"));
-        *c++ = '/';
-        c = int_to_string(100, c, PSTR("C"));
-    }
-#if EXTRUDERS > 1
-    else if (nr == 4)
-    {
         c = int_to_string(dsp_temperature[1], c, PSTR("C"));
         *c++ = '/';
         c = int_to_string(100, c, PSTR("C"));
     }
-#endif
 #if TEMP_SENSOR_BED != 0
-    else if (nr == 3 + EXTRUDERS)
+    else if (nr == 4)
     {
         c = int_to_string(dsp_temperature_bed, c, PSTR("C"));
         *c++ = '/';
         c = int_to_string(100, c, PSTR("C"));
     }
 #endif
-    else if (nr == 3 + BED_MENU_OFFSET + EXTRUDERS)
+    else if (nr == 4 + BED_MENU_OFFSET)
         c = int_to_string(int(fanSpeed) * 100 / 255, c, PSTR("%"));
-    else if (nr == 4 + BED_MENU_OFFSET + EXTRUDERS)
-        c = int_to_string(extrudemultiply[0], c, PSTR("%"));
-#if EXTRUDERS > 1
-    else if (nr == 5 + BED_MENU_OFFSET + EXTRUDERS)
+    else if (nr == 5 + BED_MENU_OFFSET)
         c = int_to_string(extrudemultiply[1], c, PSTR("%"));
-#endif
-    else if (nr == 6 + BED_MENU_OFFSET + EXTRUDERS)
+    else if (nr == 7 + BED_MENU_OFFSET)
     {
         c = int_to_string(led_brightness_level, c, PSTR("%"));
         if (led_mode == LED_MODE_ALWAYS_ON ||  led_mode == LED_MODE_WHILE_PRINTING || led_mode == LED_MODE_BLINK_ON_DONE)
@@ -787,25 +728,6 @@ static void tune_item_details_callback(uint8_t nr)
     lcd_lib_draw_string(5, 53, card.longFilename);
 }
 
-void lcd_menu_print_tune_heatup_nozzle0()
-{
-    if (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM != 0)
-    {
-         lcd_lib_encoder_pos = 0;
-    }
-    if (lcd_lib_button_pressed)
-        lcd_change_to_menu(previousMenu, previousEncoderPos);
-
-    lcd_lib_clear();
-    lcd_lib_draw_string_centerP(20, PSTR("Nozzle temperature:"));
-    lcd_lib_draw_string_centerP(53, PSTR("Click to return"));
-    char buffer[16];
-    int_to_string(int(dsp_temperature[0]), buffer, PSTR("C/"));
-    int_to_string(int(100), buffer+strlen(buffer), PSTR("C"));
-    lcd_lib_draw_string_center(30, buffer);
-    lcd_lib_update_screen();
-}
-#if EXTRUDERS > 1
 void lcd_menu_print_tune_heatup_nozzle1()
 {
     if (lcd_lib_encoder_pos / ENCODER_TICKS_PER_SCROLL_MENU_ITEM != 0)
@@ -824,11 +746,10 @@ void lcd_menu_print_tune_heatup_nozzle1()
     lcd_lib_draw_string_center(30, buffer);
     lcd_lib_update_screen();
 }
-#endif
 
 static void lcd_menu_print_tune()
 {
-    lcd_scroll_menu(PSTR("TUNE"), 6 + BED_MENU_OFFSET + EXTRUDERS * 2, tune_item_callback, tune_item_details_callback);
+    lcd_scroll_menu(PSTR("TUNE"), 8 + BED_MENU_OFFSET, tune_item_callback, tune_item_details_callback);
     if (lcd_lib_button_pressed)
     {
         if (IS_SELECTED_SCROLL(0))
@@ -843,26 +764,18 @@ static void lcd_menu_print_tune()
         }else if (IS_SELECTED_SCROLL(2))
             LCD_EDIT_SETTING(feedmultiply, "Print speed", "%", 10, 1000);
         else if (IS_SELECTED_SCROLL(3))
-            lcd_change_to_menu(lcd_menu_print_tune_heatup_nozzle0, 0);
-#if EXTRUDERS > 1
-        else if (IS_SELECTED_SCROLL(4))
             lcd_change_to_menu(lcd_menu_print_tune_heatup_nozzle1, 0);
-#endif
 #if TEMP_SENSOR_BED != 0
-        else if (IS_SELECTED_SCROLL(3 + EXTRUDERS))
+        else if (IS_SELECTED_SCROLL(4))
             lcd_change_to_menu(lcd_menu_maintenance_advanced_bed_heatup, 0);//Use the maintainace heatup menu, which shows the current temperature.
 #endif
-        else if (IS_SELECTED_SCROLL(3 + BED_MENU_OFFSET + EXTRUDERS))
+        else if (IS_SELECTED_SCROLL(4 + BED_MENU_OFFSET))
             LCD_EDIT_SETTING_BYTE_PERCENT(fanSpeed, "Fan speed", "%", 0, 100);
-        else if (IS_SELECTED_SCROLL(4 + BED_MENU_OFFSET + EXTRUDERS))
-            LCD_EDIT_SETTING(extrudemultiply[0], "Material flow", "%", 10, 1000);
-#if EXTRUDERS > 1
-        else if (IS_SELECTED_SCROLL(5 + BED_MENU_OFFSET + EXTRUDERS))
-            LCD_EDIT_SETTING(extrudemultiply[1], "Material flow 2", "%", 10, 1000);
-#endif
-        else if (IS_SELECTED_SCROLL(4 + BED_MENU_OFFSET + EXTRUDERS * 2))
+        else if (IS_SELECTED_SCROLL(5 + BED_MENU_OFFSET))
+            LCD_EDIT_SETTING(extrudemultiply[1], "Material flow", "%", 10, 1000);
+        else if (IS_SELECTED_SCROLL(6 + BED_MENU_OFFSET))
             lcd_change_to_menu(lcd_menu_print_tune_retraction);
-        else if (IS_SELECTED_SCROLL(5 + BED_MENU_OFFSET + EXTRUDERS * 2))
+        else if (IS_SELECTED_SCROLL(7 + BED_MENU_OFFSET))
             LCD_EDIT_SETTING(led_brightness_level, "Brightness", "%", 0, 100);
     }
 }
@@ -875,10 +788,6 @@ static char* lcd_retraction_item(uint8_t nr)
         strcpy_P(card.longFilename, PSTR("Retract length"));
     else if (nr == 2)
         strcpy_P(card.longFilename, PSTR("Retract speed"));
-#if EXTRUDERS > 1
-    else if (nr == 3)
-        strcpy_P(card.longFilename, PSTR("Extruder change len"));
-#endif
     else
         strcpy_P(card.longFilename, PSTR("???"));
     return card.longFilename;
@@ -893,16 +802,12 @@ static void lcd_retraction_details(uint8_t nr)
         float_to_string(retract_length, buffer, PSTR("mm"));
     else if(nr == 2)
         int_to_string(retract_feedrate / 60 + 0.5, buffer, PSTR("mm/sec"));
-#if EXTRUDERS > 1
-    else if(nr == 3)
-        int_to_string(extruder_swap_retract_length, buffer, PSTR("mm"));
-#endif
     lcd_lib_draw_string(5, 53, buffer);
 }
 
 static void lcd_menu_print_tune_retraction()
 {
-    lcd_scroll_menu(PSTR("RETRACTION"), 3 + (EXTRUDERS > 1 ? 1 : 0), lcd_retraction_item, lcd_retraction_details);
+    lcd_scroll_menu(PSTR("RETRACTION"), 3, lcd_retraction_item, lcd_retraction_details);
     if (lcd_lib_button_pressed)
     {
         if (IS_SELECTED_SCROLL(0))
@@ -911,10 +816,6 @@ static void lcd_menu_print_tune_retraction()
             LCD_EDIT_SETTING_FLOAT001(retract_length, "Retract length", "mm", 0, 50);
         else if (IS_SELECTED_SCROLL(2))
             LCD_EDIT_SETTING_SPEED(retract_feedrate, "Retract speed", "mm/sec", 0, max_feedrate[E_AXIS] * 60);
-#if EXTRUDERS > 1
-        else if (IS_SELECTED_SCROLL(3))
-            LCD_EDIT_SETTING_FLOAT001(extruder_swap_retract_length, "Extruder change", "mm", 0, 50);
-#endif
     }
 }
 
