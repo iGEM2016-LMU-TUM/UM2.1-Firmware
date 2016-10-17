@@ -599,7 +599,7 @@ const bool E1_ENDSTOPS_INVERTING = true; // set to true to invert the logic of t
 										// (Ultimaker 2 hot end capacity is approx 80 mm^3)
 #define PRIMING_MM3_PER_SEC 5			// Rate at which to prime head (in mm^3/s)
 										// (Ultimaker 2 upper limit is 8-10)
-#define PRIMING_HEIGHT 20				// Height at which to perform the priming extrusions
+#define PRIMING_HEIGHT 10				// Height at which to perform the priming extrusions
 
 // Bed leveling wizard configuration
 #define LEVELING_OFFSET 0.1				// Assumed thickness of feeler gauge/paper used in leveling (mm)

@@ -538,7 +538,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   target[X_AXIS] = lround(x*axis_steps_per_unit[X_AXIS]);
   target[Y_AXIS] = lround(y*axis_steps_per_unit[Y_AXIS]);
   target[Z_AXIS] = lround(z*axis_steps_per_unit[Z_AXIS]);
-  target[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]*volume_to_filament_length[extruder]);
+  target[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);
 
   #ifdef PREVENT_DANGEROUS_EXTRUDE
   if(target[E_AXIS]!=position[E_AXIS])

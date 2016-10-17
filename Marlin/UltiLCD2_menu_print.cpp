@@ -129,8 +129,6 @@ static void doStartPrint()
 	// since we are going to prime the nozzle, forget about any G10/G11 retractions that happened at end of previous print
 	retracted = false;
 
-	goto end;
-
         if (!primed)
         {
             // move to priming height
@@ -146,7 +144,7 @@ static void doStartPrint()
 
         // perform additional priming
         plan_set_e_position(-PRIMING_MM3);
-        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], (PRIMING_MM3_PER_SEC * volume_to_filament_length[1]), 1);
+        plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], PRIMING_MM3_PER_SEC, 1);
 
 end:
     primed = true;
