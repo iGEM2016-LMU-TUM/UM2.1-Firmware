@@ -349,7 +349,7 @@ const bool E1_ENDSTOPS_INVERTING = true; // set to true to invert the logic of t
 // Travel limits after homing
 #define X_MAX_POS 230
 #define X_MIN_POS 0
-#define Y_MAX_POS 224.5
+#define Y_MAX_POS 223
 #define Y_MIN_POS 0
 #define Z_MAX_POS 225
 #define Z_MIN_POS 0
